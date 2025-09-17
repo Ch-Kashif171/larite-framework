@@ -3,6 +3,7 @@
 namespace Lumite\Database\Traits\Builder;
 
 use Lumite\Database\Timestamp;
+use Lumite\Support\Pagination\Paginate;
 use Lumite\Support\Collection\Collection;
 
 trait ORMGetters
@@ -109,14 +110,17 @@ trait ORMGetters
 
     /**
      * @param $limit
-     * @return array
+     * @return mixed
      */
-    public function simplePaginate($limit): array
+    public function simplePaginate($limit): mixed
     {
         // skip timestamp
         $timestamp = Timestamp::timestamp($this->modelClass ?? null);
 
-        return $this->wrapSimplePaginate(fn() => $this->doctrine->simplePaginate($limit, $timestamp, $this->hidden));
+        $pagination = $this->wrapSimplePaginate(fn() => $this->doctrine->simplePaginate($limit, $timestamp, $this->hidden));
+        
+        // Convert to Paginate object
+        return new Paginate($pagination);
     }
 
 }

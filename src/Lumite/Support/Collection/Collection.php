@@ -2,6 +2,8 @@
 
 namespace Lumite\Support\Collection;
 
+use Lumite\Support\Pagination\Paginator;
+
 class Collection implements \ArrayAccess, \IteratorAggregate, \Countable
 {
     protected  $items;
@@ -437,6 +439,23 @@ class Collection implements \ArrayAccess, \IteratorAggregate, \Countable
 
     // For convenience
     public function all(): array { return $this->items; }
+
+    /**
+     * Pagination compatibility: if a view holds a Collection
+     * where a Paginate was expected, forward links() to the current paginator.
+     */
+    public function links(): string
+    {
+        return Paginator::getCurrent()?->links() ?? '';
+    }
+
+    /**
+     * Alias for links()
+     */
+    public function render(): string
+    {
+        return $this->links();
+    }
 
     /**
      * Normalize operator strings.

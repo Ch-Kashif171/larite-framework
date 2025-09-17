@@ -51,7 +51,7 @@ interface DoctrineContract
     public function rightJoin(string $table, string $column, string $equal, string $second_column): self;
     public function fullOuterJoin(string $table, string $column, string $equal, string $second_column): self;
     public function paginate(int $limit, array $timestamp = [], array $hidden = []): array;
-    public function simplePaginate(int $limit, array $timestamp = []): array;
+    public function simplePaginate(int $limit, array $timestamp = [], array $hidden = []): array;
     public function pluck(array|string $columns): Collection;
     public function exists(): bool;
     public function firstOrFail(array $timestamp = []): mixed;

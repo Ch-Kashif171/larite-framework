@@ -61,6 +61,13 @@ trait Wrapper
         // Get the pagination result from doctrine
         $pagination = $callback();
 
+        // If it's already a Paginate object, process its data
+        if ($pagination instanceof Paginate) {
+            $processedData = $this->processPaginationData($pagination->data->toArray(), $this->hidden);
+            $pagination->data = new Collection($processedData);
+            return $pagination;
+        }
+
         // Process the data portion through the relation pipeline
         $processedData = $this->processPaginationData($pagination['data'], $this->hidden);
 
@@ -190,11 +197,11 @@ trait Wrapper
 
     /**
      * Process pagination data through the relation pipeline
-     * @param array $data
+     * @param array|Collection $data
      * @param array $hidden
      * @return array
      */
-    private function processPaginationData(array $data, array $hidden = []): array
+    private function processPaginationData($data, array $hidden = []): array
     {
         // Automatically load any defined relationships
         $result = $this->hydrates($data);
@@ -202,6 +209,11 @@ trait Wrapper
         // Eager load
         if (property_exists($this, 'with')) {
             $result = $this->eagerLoadRelations($result, $this->with);
+        }
+
+        // Convert Collection to array if needed
+        if ($result instanceof Collection) {
+            return $result->toArray();
         }
 
         return $result;

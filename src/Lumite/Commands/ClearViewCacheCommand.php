@@ -26,3 +26,4 @@ class ClearViewCacheCommand extends BaseCommand
 		return self::SUCCESS;
 	}
 }
+

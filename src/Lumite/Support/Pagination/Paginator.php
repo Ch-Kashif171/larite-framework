@@ -5,6 +5,20 @@ namespace Lumite\Support\Pagination;
 class Paginator
 {
     /**
+     * Holds the latest paginator instance for the current request lifecycle.
+     */
+    private static ?Paginate $current = null;
+
+    public static function setCurrent(?Paginate $paginator): void
+    {
+        self::$current = $paginator;
+    }
+
+    public static function getCurrent(): ?Paginate
+    {
+        return self::$current;
+    }
+    /**
      * @param $links
      * @return string
      */

@@ -82,11 +82,14 @@ class Compiler
         $value = $this->compileEchos($value);
         $value = $this->compileRawEchos($value);
         $value = $this->compileIfStatements($value);
+        $value = $this->compileAdditionalConditionals($value);
+        $value = $this->compileSwitch($value);
         $value = $this->compileLoops($value);
         $value = $this->compileLayouts($value);
         $value = $this->compileIncludes($value);
         $value = $this->compilePhp($value);
         $value = $this->compileCsrf($value);
+        $value = $this->compileDebugHelpers($value);
         $value = $this->compileErrors($value);
         $value = $this->compileCustomDirectives($value);
         return $value;
@@ -112,10 +115,25 @@ class Compiler
     private function compileRawEchos(string $value): string
     {
         // Raw echo: {!! $var !!}
-        return preg_replace_callback('/\{!!\s*(.*?)\s*!!\}/s', function ($matches) {
+        $value = preg_replace_callback('/\{!!\s*(.*?)\s*!!\}/s', function ($matches) {
             $expr = trim($matches[1]);
             return '<?php echo ' . $expr . '; ?>';
         }, $value);
+
+        // Convenience: {$links} should resolve to current paginator links if variable is missing
+        // Transform: {!! $links() !!} or {!! $links !!}
+        $value = preg_replace(
+            '/\{!!\s*\$links\s*\(\s*\)\s*!!\}/',
+            '<?php echo (\\Lumite\\Support\\Pagination\\Paginator::getCurrent()?->links()) ?? ""; ?>',
+            $value
+        );
+        $value = preg_replace(
+            '/\{!!\s*\$links\s*!!\}/',
+            '<?php echo (\\Lumite\\Support\\Pagination\\Paginator::getCurrent()?->links()) ?? ""; ?>',
+            $value
+        );
+
+        return $value;
     }
 
     /**
@@ -172,9 +190,63 @@ class Compiler
      */
     private function compilePhp(string $value): string
     {
-        // @php ... @endphp
+        // @php(expr) one-liner
+        $value = preg_replace('/@php\s*\((.*)\)/', '<?php $1; ?>', $value);
+
+        // @php ... @endphp block
         $value = preg_replace('/@php\s*/', '<?php ', $value);
         $value = preg_replace('/@endphp/', ' ?>', $value);
+        return $value;
+    }
+
+    /**
+     * Conditional directives: @isset, @endisset, @empty, @endempty, @unless, @endunless
+     */
+    private function compileAdditionalConditionals(string $value): string
+    {
+        $patterns = [
+            '/@isset\s*\((.*)\)/'   => '<?php if (isset($1)): ?>',
+            '/@endisset/'             => '<?php endif; ?>',
+            '/@empty\s*\((.*)\)/'    => '<?php if (empty($1)): ?>',
+            '/@endempty/'             => '<?php endif; ?>',
+            '/@unless\s*\((.*)\)/'   => '<?php if (!($1)): ?>',
+            '/@endunless/'            => '<?php endif; ?>',
+        ];
+        return preg_replace(array_keys($patterns), array_values($patterns), $value);
+    }
+
+    /**
+     * Switch/case directives: @switch, @case, @break, @default, @endswitch
+     */
+    private function compileSwitch(string $value): string
+    {
+        $patterns = [
+            '/@switch\s*\((.*)\)/'   => '<?php switch($1): ?>',
+            '/@case\s*\((.*)\)/'     => '<?php case $1: ?>',
+            '/@break/'                 => '<?php break; ?>',
+            '/@default/'               => '<?php default: ?>',
+            '/@endswitch/'             => '<?php endswitch; ?>',
+        ];
+        return preg_replace(array_keys($patterns), array_values($patterns), $value);
+    }
+
+    /**
+     * Debug helpers: @dump(...), @dd(...)
+     */
+    private function compileDebugHelpers(string $value): string
+    {
+        // @dump(expr)
+        $value = preg_replace_callback('/@dump\s*\((.*)\)/', function ($matches) {
+            $expr = trim($matches[1]);
+            return "<?php dump(" . $expr . "); ?>";
+        }, $value);
+
+        // @dd(expr)
+        $value = preg_replace_callback('/@dd\s*\((.*)\)/', function ($matches) {
+            $expr = trim($matches[1]);
+            return "<?php dd(" . $expr . "); ?>";
+        }, $value);
+
         return $value;
     }
 

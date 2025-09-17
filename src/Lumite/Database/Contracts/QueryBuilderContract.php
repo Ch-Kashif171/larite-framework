@@ -253,9 +253,9 @@ interface QueryBuilderContract
 
     /**
      * @param $limit
-     * @return array|\Lumite\Support\Collection\Collection
+     * @return mixed
      */
-    public function simplePaginate($limit): array|Collection;
+    public function simplePaginate($limit);
 
     /**
      * @param $data

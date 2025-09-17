@@ -4,6 +4,7 @@ namespace Lumite\Support\Pagination;
 
 use Lumite\Support\Collection\Collection;
 use Lumite\Support\Constants;
+use Lumite\Support\Pagination\Paginator;
 use ReturnTypeWillChange;
 
 class Paginate implements \ArrayAccess, \IteratorAggregate, \Countable
@@ -27,6 +28,8 @@ class Paginate implements \ArrayAccess, \IteratorAggregate, \Countable
 
     public function __construct(array $pagination)
     {
+        // Register as current paginator for the view layer convenience
+        \Lumite\Support\Pagination\Paginator::setCurrent($this);
         foreach (Constants::KEYS as $key) {
             $this->{$key} = $pagination[$key] ?? null;
         }
@@ -62,6 +65,12 @@ class Paginate implements \ArrayAccess, \IteratorAggregate, \Countable
 
     public function __call($method, $parameters)
     {
+        // Handle pagination-specific methods
+        if ($method === 'links' || $method === 'render') {
+            return $this->links();
+        }
+        
+        // Forward other methods to the data collection
         if (method_exists($this->data, $method)) {
             return $this->data->$method(...$parameters);
         }
@@ -82,11 +91,53 @@ class Paginate implements \ArrayAccess, \IteratorAggregate, \Countable
 
     public function offsetSet($offset, $value): void
     {
-        $this->$offset = $value;
+        if ($offset === 'data' && is_array($value)) {
+            $this->$offset = new Collection($value);
+        } else {
+            $this->$offset = $value;
+        }
     }
 
     public function offsetUnset($offset): void
     {
         unset($this->$offset);
+    }
+
+    /**
+     * Render the pagination links
+     * @param string $view
+     * @return string
+     */
+    public function links(string $view = 'default'): string
+    {
+        // Check if this is a simple pagination
+        if (isset($this->simple) && $this->simple) {
+            return Paginator::simplePagination($this);
+        }
+        
+        return Paginator::pagination($this);
+    }
+
+    /**
+     * Get the pagination links as a string (alias for links method)
+     * @return string
+     */
+    public function render(): string
+    {
+        return $this->links();
+    }
+
+    /**
+     * Magic method to support old-style pagination syntax
+     * @param string $name
+     * @return mixed
+     */
+    public function __get($name)
+    {
+        if ($name === 'links') {
+            return $this->links();
+        }
+        
+        return $this->$name ?? null;
     }
 }

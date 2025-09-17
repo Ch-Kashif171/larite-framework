@@ -138,7 +138,7 @@ trait RetrievalTrait
             $result = $rows; // multiple columns as associative arrays
         }
 
-        // Wrap in Collection for Laravel-style chaining
+        // Wrap in Collection for chaining
         return new Collection($result);
     }
 

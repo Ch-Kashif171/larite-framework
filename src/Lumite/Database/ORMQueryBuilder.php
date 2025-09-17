@@ -7,7 +7,9 @@ use Lumite\Database\Traits\Builder\Aggregators;
 use Lumite\Database\Traits\Builder\EagerLoading;
 use Lumite\Database\Traits\Builder\ORMGetters;
 use Lumite\Exception\Handlers\DBException;
+use Lumite\Support\Collection\Collection;
 use Lumite\Support\Constants;
+use Lumite\Support\Pagination\Paginate;
 use Whoops\Exception\ErrorException;
 
 class ORMQueryBuilder implements QueryBuilderContract
@@ -517,5 +519,6 @@ class ORMQueryBuilder implements QueryBuilderContract
         $this->doctrine = $this->doctrine->fullOuterJoin($table, $column, $equal, $second_column);
         return $this;
     }
+
 
 } 
