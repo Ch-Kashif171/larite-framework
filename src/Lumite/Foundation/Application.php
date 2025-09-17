@@ -16,7 +16,7 @@ use Lumite\Utils\RouteExist;
 
 class Application
 {
-    const VERSION = '6.0.1';
+    const VERSION = '6.1.0';
     
     const FRAMEWORK = 'Larite';
 
