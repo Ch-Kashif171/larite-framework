@@ -4,22 +4,46 @@ namespace Lumite\Support\Blade;
 
 class Compiler
 {
+    /**
+     * @var string 
+     */
     private string $viewsPath;
+
+    /**
+     * @var string 
+     */
     private string $cachePath;
+
+    /**
+     * @var array 
+     */
     private static array $customDirectives = [];
 
+    /**
+     * @param string $viewsPath
+     * @param string $cachePath
+     */
     public function __construct(string $viewsPath, string $cachePath)
     {
         $this->viewsPath = rtrim($viewsPath, '/\\');
         $this->cachePath = rtrim($cachePath, '/\\');
     }
 
+    /**
+     * @param string $viewFile
+     * @return string
+     */
     public function getCompiledPath(string $viewFile): string
     {
         $hash = md5($viewFile . '|' . filemtime($viewFile));
         return $this->cachePath . DIRECTORY_SEPARATOR . $hash . '.php';
     }
 
+    /**
+     * @param string $viewFile
+     * @param string $compiledFile
+     * @return bool
+     */
     public function isExpired(string $viewFile, string $compiledFile): bool
     {
         if (!file_exists($compiledFile)) {
@@ -28,6 +52,10 @@ class Compiler
         return filemtime($viewFile) > filemtime($compiledFile);
     }
 
+    /**
+     * @param string $viewFile
+     * @return string
+     */
     public function compile(string $viewFile): string
     {
         if (!is_dir($this->cachePath)) {
@@ -45,6 +73,10 @@ class Compiler
         return $compiledPath;
     }
 
+    /**
+     * @param string $value
+     * @return string
+     */
     public function compileString(string $value): string
     {
         $value = $this->compileEchos($value);
@@ -60,6 +92,10 @@ class Compiler
         return $value;
     }
 
+    /**
+     * @param string $value
+     * @return string
+     */
     private function compileEchos(string $value): string
     {
         // Escaped echo: {{ $var }}
@@ -69,6 +105,10 @@ class Compiler
         }, $value);
     }
 
+    /**
+     * @param string $value
+     * @return string
+     */
     private function compileRawEchos(string $value): string
     {
         // Raw echo: {!! $var !!}
@@ -78,6 +118,10 @@ class Compiler
         }, $value);
     }
 
+    /**
+     * @param string $value
+     * @return string
+     */
     private function compileIfStatements(string $value): string
     {
         $patterns = [
@@ -89,6 +133,10 @@ class Compiler
         return preg_replace(array_keys($patterns), array_values($patterns), $value);
     }
 
+    /**
+     * @param string $value
+     * @return string
+     */
     private function compileLoops(string $value): string
     {
         $patterns = [
@@ -102,6 +150,10 @@ class Compiler
         return preg_replace(array_keys($patterns), array_values($patterns), $value);
     }
 
+    /**
+     * @param string $value
+     * @return string
+     */
     private function compileIncludes(string $value): string
     {
         // @include('partials.name', ['x' => 1])
@@ -114,6 +166,10 @@ class Compiler
         }, $value);
     }
 
+    /**
+     * @param string $value
+     * @return string
+     */
     private function compilePhp(string $value): string
     {
         // @php ... @endphp
@@ -122,12 +178,20 @@ class Compiler
         return $value;
     }
 
+    /**
+     * @param string $value
+     * @return string
+     */
     private function compileCsrf(string $value): string
     {
         // @csrf
         return preg_replace('/@csrf/', '<?php echo csrf_field(); ?>', $value);
     }
 
+    /**
+     * @param string $value
+     * @return string
+     */
     private function compileLayouts(string $value): string
     {
         // @extends('layout.name')
@@ -157,6 +221,10 @@ class Compiler
         return $value;
     }
 
+    /**
+     * @param string $value
+     * @return string
+     */
     private function compileErrors(string $value): string
     {
         // @error('field') ... @enderror
@@ -170,11 +238,20 @@ class Compiler
         return $value;
     }
 
+    /**
+     * @param string $name
+     * @param callable $compiler
+     * @return void
+     */
     public static function directive(string $name, callable $compiler): void
     {
         self::$customDirectives[$name] = $compiler;
     }
 
+    /**
+     * @param string $value
+     * @return string
+     */
     private function compileCustomDirectives(string $value): string
     {
         if (empty(self::$customDirectives)) {
@@ -198,6 +275,7 @@ class Compiler
 
         return $value;
     }
+    
 }
 
 

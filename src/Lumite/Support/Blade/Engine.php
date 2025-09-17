@@ -4,10 +4,25 @@ namespace Lumite\Support\Blade;
 
 class Engine
 {
+    /**
+     * @var Compiler 
+     */
     private Compiler $compiler;
+
+    /**
+     * @var string 
+     */
     private string $viewsPath;
+
+    /**
+     * @var string 
+     */
     private string $cachePath;
 
+    /**
+     * @param string $viewsPath
+     * @param string $cachePath
+     */
     public function __construct(string $viewsPath, string $cachePath)
     {
         $this->viewsPath = rtrim($viewsPath, '/\\');
@@ -15,11 +30,24 @@ class Engine
         $this->compiler = new Compiler($this->viewsPath, $this->cachePath);
     }
 
+    /**
+     * @param string $view
+     * @param array $data
+     * @param bool $returnString
+     * @return mixed
+     */
     public function render(string $view, array $data = [], bool $returnString = false): mixed
     {
         return $this->renderInternal($view, $data, $returnString, false);
     }
 
+    /**
+     * @param string $view
+     * @param array $data
+     * @param bool $returnString
+     * @param bool $preserveRuntime
+     * @return mixed
+     */
     private function renderInternal(string $view, array $data, bool $returnString, bool $preserveRuntime): mixed
     {
         if (!$preserveRuntime) {
@@ -51,6 +79,11 @@ class Engine
         return true;
     }
 
+    /**
+     * @param string $view
+     * @param array $data
+     * @return string
+     */
     public static function renderInclude(string $view, array $data = []): string
     {
         // Simple include without going through the full engine to avoid circular references
@@ -76,6 +109,10 @@ class Engine
         throw new \RuntimeException("Include view not found: " . $view);
     }
 
+    /**
+     * @param string $view
+     * @return string
+     */
     private function resolveViewPath(string $view): string
     {
         // dot notation
@@ -91,6 +128,7 @@ class Engine
 
         throw new \RuntimeException("View not found: " . $view);
     }
+    
 }
 
 
