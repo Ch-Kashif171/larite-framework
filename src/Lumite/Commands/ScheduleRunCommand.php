@@ -1,13 +1,14 @@
 <?php
 
-namespace Lumite\Scheduling;
+namespace Lumite\Commands;
 
 use App\Console\Kernel;
+use Lumite\Scheduling\Schedule;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
-class ScheduleRun extends Command
+class ScheduleRunCommand extends Command
 {
     protected function configure(): void
     {

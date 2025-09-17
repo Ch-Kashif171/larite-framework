@@ -16,8 +16,8 @@ use Lumite\Commands\ClearViewCacheCommand;
 use Lumite\Commands\MigrationCommand;
 use Lumite\Commands\RollbackMigrationCommand;
 use Lumite\Commands\RouteListCommand;
+use Lumite\Commands\ScheduleRunCommand;
 use Lumite\Dotenv\Dotenv;
-use Lumite\Scheduling\ScheduleRun;
 use Symfony\Component\Console\Application;
 
 class Commander
@@ -53,6 +53,7 @@ class Commander
             MakeCommandCommand::class,
             MakeServiceProviderCommand::class,
             ClearViewCacheCommand::class,
+            ScheduleRunCommand::class,
         ];
 
         foreach ($coreCommands as $command) {
@@ -65,8 +66,6 @@ class Commander
      */
     private function registerCustomCommands()
     {
-        $this->app->add(new ScheduleRun());
-
         $kernel = new Kernel();
 
         foreach ($kernel->getCommands() as $command) {
