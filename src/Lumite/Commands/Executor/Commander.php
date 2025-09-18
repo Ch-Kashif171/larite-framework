@@ -17,7 +17,7 @@ use Lumite\Commands\MigrationCommand;
 use Lumite\Commands\RollbackMigrationCommand;
 use Lumite\Commands\RouteListCommand;
 use Lumite\Commands\ScheduleRunCommand;
-use Lumite\Dotenv\Dotenv;
+use Lumite\Support\LoadEnv;
 use Symfony\Component\Console\Application;
 
 class Commander
@@ -91,7 +91,6 @@ class Commander
      */
     private function loadEnv()
     {
-        $dotenv = new Dotenv(ROOT_PATH);
-        $dotenv->load();
+        return new LoadEnv(ROOT_PATH);
     }
 }

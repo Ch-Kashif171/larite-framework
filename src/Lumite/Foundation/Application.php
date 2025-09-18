@@ -3,6 +3,7 @@
 namespace Lumite\Foundation;
 
 use App\Exceptions\Handler;
+use Lumite\Mailer\Exception;
 use Lumite\Support\AssetsNotFound;
 use Lumite\Support\LoadEnv;
 use Lumite\Support\Facades\Route;
@@ -17,7 +18,7 @@ use Lumite\Utils\RouteExist;
 class Application
 {
     const VERSION = '6.1.0';
-    
+
     const FRAMEWORK = 'Larite';
 
     protected Container $container;
@@ -97,21 +98,33 @@ class Application
 
     /**
      * @return void
+     * @throws \ReflectionException
      */
     protected function registerSingletons(): void
     {
-        if (!file_exists( ROOT_PATH .'/.env')) {
+        $envExists = file_exists(ROOT_PATH . '/.env');
+
+        if (!$this->isCli()) {
+            // In web requests, register assets handler
+            $this->registerBootstrapSingleton('assetsNotFound', [AssetsNotFound::class, 'run']);
+        } else {
+            // In CLI mode, fail hard if .env is missing
+            if (!$envExists) {
+                throw new \RuntimeException(".env file doesn't exist or is not readable at: {$envPath}");
+            }
+        }
+
+        if (!$envExists) {
+            // If no .env → Whoops first, then dotenv
             $this->registerBootstrapSingleton('whoops', [Whoops::class, 'handler']);
             $this->registerBootstrapSingleton('dotenv', LoadEnv::class, [ROOT_PATH]);
         } else {
+            // If .env exists → dotenv first, then Whoops
             $this->registerBootstrapSingleton('dotenv', LoadEnv::class, [ROOT_PATH]);
             $this->registerBootstrapSingleton('whoops', [Whoops::class, 'handler']);
         }
-
-        if (!$this->isCli()) {
-            $this->registerBootstrapSingleton('assetsNotFound', [AssetsNotFound::class, 'run']);
-        }
     }
+
 
     /**
      * @return bool
