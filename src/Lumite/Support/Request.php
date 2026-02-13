@@ -9,6 +9,24 @@ use Lumite\Support\Requests\RequestFiles;
 use Lumite\Support\Requests\RequestAuth;
 use stdClass;
 
+/**
+ * @method string|array|null queryString(?string $key = null) Get query string or specific key
+ * @method string scheme() Get request scheme (http/https)
+ * @method string host() Get host
+ * @method int port() Get port
+ * @method string|null userAgent() Get user agent
+ * @method string|null referer() Get referer
+ * @method bool|string move(array $file, string $destination) Move uploaded file
+ * @method string getExtension(array $file) Get file extension
+ * @method string|false getMimeType(array $file) Get file MIME type
+ * 
+ * @method static string|array|null queryString(?string $key = null) Get query string or specific key
+ * @method static string scheme() Get request scheme (http/https)
+ * @method static string host() Get host
+ * @method static int port() Get port
+ * @method static string|null userAgent() Get user agent
+ * @method static string|null referer() Get referer
+ */
 class Request
 {
     private RequestInput $input;
@@ -200,5 +218,61 @@ class Request
         }
 
         throw new \Exception("Key '$key' does not exist in request.");
+    }
+
+    /**
+     * Dynamically handle calls to the class.
+     *
+     * @param  string  $method
+     * @param  array  $parameters
+     * @return mixed
+     *
+     * @throws \BadMethodCallException
+     */
+    public function __call($method, $parameters)
+    {
+        // Check internal components
+        $components = [
+            $this->input,
+            $this->headers,
+            $this->files,
+            $this->auth,
+        ];
+
+        foreach ($components as $component) {
+            if (method_exists($component, $method)) {
+                return $component->$method(...$parameters);
+            }
+        }
+
+        // Check static helper
+        if (method_exists(RequestInfo::class, $method)) {
+            return RequestInfo::$method(...$parameters);
+        }
+
+        throw new \BadMethodCallException(sprintf(
+            'Method %s::%s does not exist.', static::class, $method
+        ));
+    }
+
+    /**
+     * Dynamically handle static calls to the class.
+     *
+     * @param  string  $method
+     * @param  array  $parameters
+     * @return mixed
+     *
+     * @throws \BadMethodCallException
+     */
+    public static function __callStatic($method, $parameters)
+    {
+        // Check static helper
+        if (method_exists(RequestInfo::class, $method)) {
+            return RequestInfo::$method(...$parameters);
+        }
+
+        throw new \BadMethodCallException(sprintf(
+            'Method %s::%s does not exist.', static::class, $method
+        ));
     }
 }

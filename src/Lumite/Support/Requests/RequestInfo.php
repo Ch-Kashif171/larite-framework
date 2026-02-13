@@ -114,10 +114,14 @@ class RequestInfo
     }
 
     /**
-     * Get query string
+     * Get query string or specific key
      */
-    public static function queryString(): string
+    public static function queryString(?string $key = null): string|array|null
     {
+        if ($key) {
+            return $_GET[$key] ?? null;
+        }
+
         return $_SERVER['QUERY_STRING'] ?? '';
     }
 
