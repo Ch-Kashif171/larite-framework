@@ -520,5 +520,14 @@ class ORMQueryBuilder implements QueryBuilderContract
         return $this;
     }
 
+    /**
+     * @return QueryBuilderContract
+     */
+    public function distinct(): QueryBuilderContract
+    {
+        $this->doctrine = $this->doctrine->distinct();
+        return $this;
+    }
+
 
 } 

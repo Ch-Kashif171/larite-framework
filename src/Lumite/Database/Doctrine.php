@@ -28,6 +28,8 @@ class Doctrine implements DoctrineContract
     use ClauseTrait;
     use PaginationTrait;
 
+    protected bool $distinct = false;
+
     /**
      * @param string $columns
      * @return string
@@ -37,8 +39,9 @@ class Doctrine implements DoctrineContract
         $limitClause = $this->limit ?: '';
         $offsetClause = $this->offset ?: '';
         $takeClause = $this->take ?: '';
+        $distinct = $this->distinct ? 'DISTINCT ' : '';
 
-        return "SELECT {$columns} FROM {$this->table}"
+        return "SELECT {$distinct}{$columns} FROM {$this->table}"
             . $this->joins
             . $this->wheres
             . $takeClause
@@ -54,5 +57,10 @@ class Doctrine implements DoctrineContract
         return $this->wheres;
     }
 
-}
+    public function distinct(): self
+    {
+        $this->distinct = true;
+        return $this;
+    }
 
+}
