@@ -26,7 +26,7 @@ class DBQuery
      * @return bool
      * @throws ErrorException
      */
-    public static function rawQuery($sql): bool
+    public static function rawQuery($sql)
     {
         return QueryBuilder::rawQuery($sql);
     }
