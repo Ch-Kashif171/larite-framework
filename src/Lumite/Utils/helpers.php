@@ -917,3 +917,11 @@ if (!function_exists('request')) {
     }
 
 }
+
+if (!function_exists('now')) {
+    function now(?string $tz = null): DateTimeImmutable
+    {
+        $timezone = $tz ?? date_default_timezone_get();
+        return new DateTimeImmutable('now', new DateTimeZone($timezone));
+    }
+}

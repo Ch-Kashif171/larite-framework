@@ -2,236 +2,203 @@
 
 namespace Lumite\Support;
 
-use Exception;
+use Lumite\Support\Requests\RequestHeaders;
+use Lumite\Support\Requests\RequestInfo;
+use Lumite\Support\Requests\RequestInput;
+use Lumite\Support\Requests\RequestFiles;
+use Lumite\Support\Requests\RequestAuth;
 use stdClass;
 
 class Request
 {
-    private array $fields = [];
+    private RequestInput $input;
+    private RequestHeaders $headers;
+    private RequestFiles $files;
+    private RequestAuth $auth;
+    private array $routeParams = [];
 
     public function __construct()
     {
-        $this->fields = $this->collectRequestFields();
+        $this->input = new RequestInput();
+        $this->headers = new RequestHeaders();
+        $this->files = new RequestFiles();
+        $this->auth = new RequestAuth($this->headers);
     }
+
+    // -------------------- User & Auth -------------------- //
 
     public function user(): ?stdClass
     {
-        $user = Auth::user();
-        return $user === false ? null : $user;
+        return $this->auth->user();
     }
 
-    /**
-     * @return string|null
-     */
-    public function ip(): ?string
+    public function bearer(): ?string
     {
-        $keys = [
-            'HTTP_CLIENT_IP',
-            'HTTP_X_FORWARDED_FOR',
-            'REMOTE_ADDR',
-        ];
-
-        foreach ($keys as $key) {
-            if (!empty($_SERVER[$key])) {
-                $ip = $_SERVER[$key];
-                if ($key === 'HTTP_X_FORWARDED_FOR') {
-                    $ipList = explode(',', $ip);
-                    return trim($ipList[0]);
-                }
-                return $ip;
-            }
-        }
-
-        return null;
+        return $this->auth->bearer();
     }
 
-    // ------------------ Public API ------------------ //
+    public static function bearerStatic(): ?string
+    {
+        return RequestAuth::bearerStatic();
+    }
+
+    // -------------------- Input Methods -------------------- //
 
     public function input(string $key): mixed
     {
-        return $this->fields[$key] ?? null;
+        return $this->input->get($key);
     }
 
     public function get(string $key): mixed
     {
-        $this->ensureMethod('GET');
-        return $_GET[$key] ?? null;
+        return $this->input->getQuery($key);
     }
 
     public function post(string $key): mixed
     {
-        $this->ensureMethod('POST');
-        return $_POST[$key] ?? null;
+        return $this->input->getPost($key);
     }
 
     public function all(): array
     {
-        return $this->fields;
+        return $this->input->all();
     }
 
     public function has(string $key): bool
     {
-        return isset($this->fields[$key]);
+        return $this->input->has($key);
+    }
+
+    public function filled(string $key): bool
+    {
+        return $this->input->filled($key);
+    }
+
+    public function boolean(string $key, bool $default = false): bool
+    {
+        return $this->input->boolean($key, $default);
     }
 
     public function only(...$keys): array
     {
-        return array_intersect_key($this->fields, array_flip($keys));
+        return $this->input->only(...$keys);
     }
 
     public function except(...$keys): array
     {
-        return array_diff_key($this->fields, array_flip($keys));
+        return $this->input->except(...$keys);
     }
 
-    public function getFile(string $key): array|null
+    // -------------------- File Methods -------------------- //
+
+    public function getFile(string $key): ?array
     {
-        return $_FILES[$key] ?? null;
+        return $this->files->get($key);
     }
 
     public function getFiles(): array
     {
-        return $_FILES ?? [];
+        return $this->files->all();
     }
 
     public function hasFile(string $key): bool
     {
-        return isset($_FILES[$key]) && !empty($_FILES[$key]['name']);
+        return $this->files->has($key);
     }
 
-    public function validateFile(array $file, array $allowedTypes = ['image/jpeg', 'image/png', 'application/pdf'], int $maxSize = 2 * 1024 * 1024): bool|string
+    public function validateFile(
+        array $file,
+        array $allowedTypes = ['image/jpeg', 'image/png', 'application/pdf'],
+        int $maxSize = 2097152
+    ): bool|string {
+        return $this->files->validate($file, $allowedTypes, $maxSize);
+    }
+
+    // -------------------- Headers -------------------- //
+
+    public function header(?string $key = null, $default = null): mixed
     {
-        if (!isset($file['error']) || is_array($file['error'])) {
-            return 'Invalid file parameters.';
-        }
-
-        if ($file['error'] !== UPLOAD_ERR_OK) {
-            return 'File upload error.';
-        }
-
-        if ($file['size'] > $maxSize) {
-            return 'File size exceeds limit.';
-        }
-
-        $finfo = new \finfo(FILEINFO_MIME_TYPE);
-        $mime = $finfo->file($file['tmp_name']);
-
-        if (!in_array($mime, $allowedTypes)) {
-            return 'Invalid file type.';
-        }
-
-        return true;
+        return $this->headers->get($key, $default);
     }
+
+    // -------------------- Request Info -------------------- //
+
+    public function ip(): ?string
+    {
+        return RequestInfo::ip();
+    }
+
+    public static function ipStatic(): ?string
+    {
+        return RequestInfo::ip();
+    }
+
+    public function method(): string
+    {
+        return RequestInfo::method();
+    }
+
+    public function isMethod(string $method): bool
+    {
+        return RequestInfo::isMethod($method);
+    }
+
+    public function url(): string
+    {
+        return RequestInfo::url();
+    }
+
+    public function path(): string
+    {
+        return RequestInfo::path();
+    }
+
+    public function secure(): bool
+    {
+        return RequestInfo::secure($this->headers);
+    }
+
+    public function expectsJson(): bool
+    {
+        return RequestInfo::expectsJson($this->headers);
+    }
+
+    public function ajax(): bool
+    {
+        return RequestInfo::ajax($this->headers);
+    }
+
+    // -------------------- Route Params -------------------- //
+
+    public function setRouteParams(array $params): void
+    {
+        $this->routeParams = $params;
+    }
+
+    public function route(?string $key = null, $default = null): mixed
+    {
+        if ($key === null) {
+            return $this->routeParams;
+        }
+
+        return $this->routeParams[$key] ?? $default;
+    }
+
+    // -------------------- Session -------------------- //
 
     public function session(): Session
     {
         return new Session();
     }
 
-    public function method(): string
-    {
-        return $_SERVER['REQUEST_METHOD'] ?? 'GET';
-    }
-
-    public function isMethod(string $method): bool
-    {
-        return strtoupper($this->method()) === strtoupper($method);
-    }
-
-    public function url(): string
-    {
-        $protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : 'http';
-        $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
-        $uri = $_SERVER['REQUEST_URI'] ?? '/';
-        return $protocol . '://' . $host . $uri;
-    }
-
-    public function path(): string
-    {
-        return parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH);
-    }
+    // -------------------- Magic Methods -------------------- //
 
     public function __get($key)
     {
         if ($this->has($key)) {
-            return $this->fields[$key];
+            return $this->input($key);
         }
 
         throw new \Exception("Key '$key' does not exist in request.");
-    }
-
-    // ------------------ Internal Logic ------------------ //
-
-    private function collectRequestFields(): array
-    {
-        $data = $this->parseInputByType();
-        $files = $this->mapFileNames();
-        return array_merge($data, $files);
-    }
-
-    private function parseInputByType(): array
-    {
-        $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
-        $contentType = $_SERVER['CONTENT_TYPE'] ?? '';
-
-        if ($this->isJson($contentType)) {
-            return $this->parseJsonPayload();
-        }
-
-        return match ($method) {
-            'GET' => $this->sanitize($_GET),
-            'POST' => $this->sanitize($_POST),
-            'PUT', 'PATCH' => $this->parseRawUrlEncoded(),
-            default => [],
-        };
-    }
-
-    private function parseJsonPayload(): array
-    {
-        $raw = file_get_contents('php://input');
-        $data = json_decode($raw, true);
-
-        if (json_last_error() !== JSON_ERROR_NONE || !is_array($data)) {
-            throw new Exception("Invalid JSON payload: " . json_last_error_msg());
-        }
-
-        return $this->sanitize($data);
-    }
-
-    private function parseRawUrlEncoded(): array
-    {
-        $raw = file_get_contents('php://input');
-        parse_str($raw, $data);
-        return $this->sanitize($data);
-    }
-
-    private function mapFileNames(): array
-    {
-        $names = [];
-        foreach ($_FILES as $key => $file) {
-            $names[$key] = $file['name'];
-        }
-        return $names;
-    }
-
-    private function sanitize($data): mixed
-    {
-        if (is_array($data)) {
-            return array_map([$this, 'sanitize'], $data);
-        }
-        return htmlspecialchars(trim($data), ENT_QUOTES, 'UTF-8');
-    }
-
-    private function ensureMethod(string $expected): void
-    {
-        $actual = $_SERVER['REQUEST_METHOD'] ?? 'GET';
-        if (strtoupper($actual) !== strtoupper($expected)) {
-            throw new \ErrorException("Expected $expected request, but received $actual");
-        }
-    }
-
-    private function isJson(string $contentType): bool
-    {
-        return stripos($contentType, 'application/json') !== false;
     }
 }
