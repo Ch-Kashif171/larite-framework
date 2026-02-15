@@ -88,10 +88,10 @@ trait Wrapper
         $pagination = $callback();
 
         // Process the data portion through the relation pipeline
-        $processedData = $this->processPaginationData($pagination['simple']['data'], $this->hidden);
+        $processedData = $this->processPaginationData($pagination['data'], $this->hidden);
 
         // Replace the data with processed data
-        $pagination['simple']['data'] = $processedData;
+        $pagination['data'] = $processedData;
 
         return $pagination;
     }

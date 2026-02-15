@@ -22,6 +22,8 @@ class Paginate implements \ArrayAccess, \IteratorAggregate, \Countable
     public mixed $next_page_url;
     public mixed $prev_page_url;
     public mixed $path;
+    public mixed $simple;
+    public mixed $pageName;
 
     public Collection $data;
 

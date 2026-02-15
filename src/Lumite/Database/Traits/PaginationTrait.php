@@ -13,17 +13,26 @@ trait PaginationTrait
      * @param array $hidden
      * @return array
      */
-    public function paginate(int $limit, array $timestamp = [], array $hidden = []): array
+    public function paginate(int $limit, array $timestamp = [], array $hidden = [], string $pageName = 'page'): array
     {
         $pagination = [];
 
-        $page = isset($_GET['page']) && is_numeric($_GET['page']) && $_GET['page'] > 0 ? (int)$_GET['page'] : 1;
+        $page = isset($_GET[$pageName]) && is_numeric($_GET[$pageName]) && $_GET[$pageName] > 0 ? (int)$_GET[$pageName] : 1;
 
-        $sql_statement = "SELECT count(*) as count FROM {$this->table}"
-            . $this->joins
-            . $this->wheres
-            . $this->groupBy
-            . $this->having;
+        if (!empty($this->groupBy)) {
+            $sql_statement = "SELECT count(*) as count FROM (SELECT 1 FROM {$this->table}"
+                . $this->joins
+                . $this->wheres
+                . $this->groupBy
+                . $this->having
+                . ") as aggregate_table";
+        } else {
+            $sql_statement = "SELECT count(*) as count FROM {$this->table}"
+                . $this->joins
+                . $this->wheres
+                . $this->groupBy
+                . $this->having;
+        }
         $count = $this->con->query($sql_statement);
         $total = $count->fetch(\PDO::FETCH_OBJ);
         $totalCount = (int)$total->count;
@@ -61,11 +70,12 @@ trait PaginationTrait
         $pagination['last_page'] = $lastPage;
         $pagination['from'] = $from;
         $pagination['to'] = $to;
-        $pagination['first_page_url'] = $baseUrl . '?page=1';
-        $pagination['last_page_url'] = $baseUrl . '?page=' . $lastPage;
-        $pagination['next_page_url'] = $page < $lastPage ? $baseUrl . '?page=' . ($page + 1) : null;
-        $pagination['prev_page_url'] = $page > 1 ? $baseUrl . '?page=' . ($page - 1) : null;
+        $pagination['first_page_url'] = $baseUrl . '?' . $pageName . '=1';
+        $pagination['last_page_url'] = $baseUrl . '?' . $pageName . '=' . $lastPage;
+        $pagination['next_page_url'] = $page < $lastPage ? $baseUrl . '?' . $pageName . '=' . ($page + 1) : null;
+        $pagination['prev_page_url'] = $page > 1 ? $baseUrl . '?' . $pageName . '=' . ($page - 1) : null;
         $pagination['path'] = $baseUrl;
+        $pagination['pageName'] = $pageName;
 
         return $pagination;
     }
@@ -76,8 +86,10 @@ trait PaginationTrait
      * @param array $hidden
      * @return array
      */
-    public function simplePaginate(int $limit, array $timestamp = [], array $hidden = []): array
+    public function simplePaginate(int $limit, array $timestamp = [], array $hidden = [], string $pageName = 'page'): array
     {
-        return ['simple' => $this->paginate($limit, $timestamp, $hidden)];
+        $pagination = $this->paginate($limit, $timestamp, $hidden, $pageName);
+        $pagination['simple'] = true;
+        return $pagination;
     }
 }

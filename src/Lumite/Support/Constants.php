@@ -29,6 +29,8 @@ class Constants
         'next_page_url',
         'prev_page_url',
         'path',
+        'simple',
+        'pageName',
     ];
 
     const WHERE_BETWEENS = ['whereBetween', 'orWhereBetween', 'whereNotBetween', 'orWhereNotBetween'];

@@ -24,7 +24,7 @@ class Paginator
      */
     public static function pagination($links): string
     {
-        $links = (object) $links;
+        // $links is already a Paginate object, no need to cast
         $html = '';
 
         $from = $links->from ?? 0;
@@ -50,8 +50,9 @@ class Paginator
             $end = min($links->last_page, $links->current_page + $window);
 
             // First page
+            $pageName = $links->pageName ?? 'page';
             if ($start > 1) {
-                $html .= '<li class="page-item"><a class="page-link" href="' . $links->path . '?page=1">1</a></li>';
+                $html .= '<li class="page-item"><a class="page-link" href="' . $links->path . '?' . $pageName . '=1">1</a></li>';
                 if ($start > 2) {
                     $html .= '<li class="page-item disabled"><span class="page-link">...</span></li>';
                 }
@@ -59,7 +60,7 @@ class Paginator
 
             for ($i = $start; $i <= $end; $i++) {
                 $active = $i == $links->current_page ? ' active' : '';
-                $html .= '<li class="page-item' . $active . '"><a class="page-link" href="' . $links->path . '?page=' . $i . '">' . $i . '</a></li>';
+                $html .= '<li class="page-item' . $active . '"><a class="page-link" href="' . $links->path . '?' . $pageName . '=' . $i . '">' . $i . '</a></li>';
             }
 
             // Last page
@@ -67,7 +68,7 @@ class Paginator
                 if ($end < $links->last_page - 1) {
                     $html .= '<li class="page-item disabled"><span class="page-link">...</span></li>';
                 }
-                $html .= '<li class="page-item"><a class="page-link" href="' . $links->path . '?page=' . $links->last_page . '">' . $links->last_page . '</a></li>';
+                $html .= '<li class="page-item"><a class="page-link" href="' . $links->path . '?' . $pageName . '=' . $links->last_page . '">' . $links->last_page . '</a></li>';
             }
 
             // Next
